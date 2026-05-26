@@ -1,78 +1,180 @@
 # DataCops vs Castle.io
 
-Castle has been catching account takeovers and credential-stuffing attacks at the API edge since 2015. It is genuinely good at it. **If your problem is "someone is trying to break into existing accounts," Castle is a serious, dev-first tool and you should not let this article talk you out of it.**
+Let's be real. Castle.io is a well-built, dev-first product, and the Castle vs DataCops question is mostly about scope.
 
-But that is the catch worth saying out loud before anything else: **Castle is built to answer one question, *is this account being attacked?*** It is not built to answer the question most marketing-driven teams actually have in 2026, which is, *is the traffic and the signups I am paying for real, and what is my ad spend training my campaigns to find?*
+Castle protects the API edge against account takeover, credential stuffing and fake signups. The 2026 changelog and blog focus on adversarial security research and dashboard polish. The `castle_devise` Rails gem is still flagged beta with breaking-change warnings. Pricing jumps from Free (1K calls) to Pro $200/mo to Enterprise from $4,000/mo with no middle tier. Castle has not raised since 2020. The product is solid, the roadmap is narrow, and the buyer it serves is a security engineer protecting a login form.
 
-That gap is the reason people search for a Castle alternative. Not because Castle is bad at its job. **Because its job stops at the account, and the damage from fake accounts does not.**
+DataCops protects the same signup and login surface. It also does five other things in the same product: first-party CNAME analytics, server-side CAPI to Meta + Google + TikTok + LinkedIn, traffic-fraud validation, signup fraud detection with IP intelligence and browser fingerprinting, and a TCF 2.2 first-party CMP. The buyer it serves is a marketing-aware operator running paid acquisition who has discovered that bot signups don't just create fake accounts. They poison Google Smart Bidding and Meta CAPI training data, the algorithms keep optimising spend toward the channels that produced the bots, and the CAC math is a lie. Invalid traffic is a roughly $63B/year problem. Castle blocks the fraud at the door. DataCops blocks the fraud and stops the ad spend bleeding into the channels that delivered it.
 
-This is not a Castle takedown. It is an honest read on where Castle ends and where you need something else to begin. [DataCops](/signup-cops) is the alternative I will make the case for, a marketing-aware trust layer that protects the same signup and login surfaces Castle does, but follows the fraud signal back into your analytics and your ad bidding, which Castle has no awareness of at all. Related: [DataCops vs Castle](/alternative/castle-alternative), [Fraud traffic validation](/fraud-traffic-validation), [Best signup fraud detection 2026](/resources/best-signup-fraud-detection-2026).
+This post is the honest comparison: when Castle is the right pick, when DataCops is the right pick, when you actually need both, and the Rails Devise sub-question on its own.
+
+---
 
 ## Quick stuff people keep asking
 
-**What is the best alternative to Castle?** Depends on what you are actually solving. If you need pure account-takeover and credential-stuffing defense, DataDome and [SEON](/alternative/seon-alternative) are the direct comparisons. If you need fake-account and bot-signup protection that *also* connects fraud back to your ad campaigns and analytics, DataCops is the alternative built for that - same protected surfaces, plus the marketing layer Castle ignores.
+**What does Castle.io actually do?** Account takeover detection, credential-stuffing protection, fake signup blocking, anomaly scoring at the API edge. Dev-first, integrates with custom auth and frameworks like Rails Devise.
 
-**How does Castle detect account takeovers?** Castle scores login and account events in real time using device fingerprinting, IP reputation, and behavioral signals, then flags or challenges sessions that deviate from a user's normal pattern - a new device, an impossible-travel login, a credential-stuffing burst. It is event-scoring at the API edge, and it is solid.
+**How much does Castle cost?** Free at 1,000 calls/mo. Pro at $200/mo. Enterprise from $4,000/mo. No middle tier. The cliff between Pro and Enterprise is the loudest pricing complaint in 2026.
 
-**What is the difference between Castle and DataDome?** Castle is dev-first and account-centric - you instrument login and signup events and it scores them. DataDome is broader bot management sitting in front of your whole site and APIs, blocking automated traffic at the edge. Castle goes deep on account abuse. DataDome goes wide on bot traffic. Neither connects the fraud to your ad attribution.
+**Is Castle.io still maintained?** Yes, but the 2026 product velocity is narrow. No funding round since 2020. The `castle_devise` gem is still labeled beta. Adversarial security research is being shipped; broader product surface is not.
 
-**How much does Castle cost?** Castle publishes tiered [pricing](/pricing) with a free starter tier and usage-based paid plans that scale with monthly tracked events or users; serious volume moves you to custom enterprise pricing. Expect to talk to sales once you are past startup scale. Confirm current numbers on their pricing page, since vendor pricing shifts.
+**Does Castle do ad-fraud or campaign attribution?** No. Castle has no ad-attribution awareness. A blocked bot signup at Castle doesn't tell you which Google Ads campaign delivered the bot or stop Smart Bidding from optimising toward that campaign.
 
-**Does Castle work with custom auth?** Yes - that is one of its real strengths. Castle is auth-agnostic. It is an API and SDKs you call from your own login and signup flow, so it works whether you rolled your own auth, use a framework, or run a managed provider. The "Castle Devise alternative" angle for Rails teams comes from exactly this - Castle slots alongside Devise rather than replacing it.
+**What's the difference between Castle and DataCops?** Castle is API-edge security. DataCops is marketing-aware trust infrastructure that protects the same signup/login surface and correlates fraud back to ad campaigns, ad sets and channels, with CAPI mediation and consent management built in.
 
-**What is credential stuffing protection?** Defense against attackers taking username-password pairs leaked from other breaches and testing them against your login at scale. Protection means detecting the automated, high-volume, many-accounts-from-few-sources pattern and challenging or blocking it before a takeover succeeds. Castle does this well.
+---
 
-**Can Castle block fake signups?** It can flag suspicious registrations using device and IP signals - so partially, yes. But Castle treats a fake signup as an account-security event. It does not treat it as a *marketing* event. It will not tell you which ad campaign delivered that fake signup, and it will not stop that signup from being counted as a conversion that trains your ad bidding. That is the structural gap.
+## How to think about this comparison
 
-**Is Castle still maintained?** Yes, Castle is an active product with ongoing development. "Is it still maintained" usually really means "is it still the right fit" - and that is a question about your use case, not the company's health.
+Most "Castle.io alternative" posts treat the question as swapping one ATO/credential-stuffing tool for another. That misses the bigger gap.
 
-## The gap: Castle protects the account, not the ad spend that bought the account
+The gap is that bot signups have two costs. The first cost is the fake account in your database. Castle is excellent at preventing that. The second cost is the polluted conversion event that fires on signup, lands in Meta CAPI and Google Ads, trains the bid algorithms on garbage, and burns budget for the next 30 days optimising toward the channel that delivered the bot. Castle has never addressed this second cost because it's a marketing problem, not a security problem.
 
-Here is the part that does not show up on a feature-comparison grid, and it is the whole reason this alternative exists.
+DataCops sits across both costs. The signup form gets the same edge protection (IP intelligence over a 361B+ IP reputation database, browser fingerprinting, email validation, real-time risk scoring). The bot, blocked or flagged, also gets correlated to the campaign that delivered it. The CAPI mediation layer does not forward the polluted conversion. The bid algorithm optimises on clean signal.
 
-When a [fake account](/resources/best-fake-account-detection-2026) hits your product, the damage is not contained to the account. Walk the chain. A bot or a fraud farm clicks your Meta or Google ad. That click is billed - real money, gone. The bot lands and completes your signup form. Your analytics records a conversion. That conversion event gets forwarded to Meta and Google. And now the ad platforms have learned something: *this kind of visitor converts. Find more like it.*
+This post grades both products on what they actually do, not what their marketing pages claim.
 
-Castle, sitting at the API edge, might later flag that account as suspicious. Good - for account security. But the ad click already fired. The conversion was already counted. The optimization signal was already sent. Castle has zero visibility into any of that, because Castle was never built to look upstream at the campaign. It guards the door. It does not ask who paid for the people walking through it.
+---
 
-That is the Layer 5 failure, and it compounds. Bot-contaminated conversion data trains Meta and Google to find more bots. Your cost-per-acquisition on the dashboard might even improve, because bots are cheap and abundant. Meanwhile real revenue stays flat and your ROAS quietly degrades. Garbage in, garbage optimized, garbage out. A pure account-security tool cannot see this happening, let alone stop it, because the problem lives in the space between your ad account and your analytics - a space Castle does not occupy.
+## Tier 1: API-edge account security (Castle's home turf)
 
-How bad does the fake-account problem get? A team at PillarlabAI ran a honeypot - a deliberate trap for automated signups - and pulled 3,000 signups through it. When they fingerprinted the cohort, 77 percent were fraudulent. And 650 of those accounts traced back to a single device fingerprint. One device, 650 identities. If those 650 signups had each followed an ad click, that is 650 conversions teaching your campaigns that a bot is your ideal customer. Castle could help you secure those accounts after the fact. It could not have told you they came from a paid campaign, and it could not have stopped them from poisoning your bidding.
+**1. Castle.io**
 
-For context on scale: TransUnion put suspected fraud at 8.3 percent of all account-creation attempts in H1 2026, up 18 percent year over year. This is not a fringe problem you can ignore. And the marketing-side cost of it is invisible to any tool that stops at the account boundary.
+The Good: Real depth on adversarial security research. The score model handles ATO, credential stuffing and fake signup with a single API. Custom auth and Rails Devise integrations. Strong dev experience for security-engineer buyers.
 
-## What DataCops does differently
+Frustrations: Pricing cliff between Pro $200/mo and Enterprise $4,000/mo with nothing in between. `castle_devise` Rails gem still beta with breaking-change warnings. No ad-attribution layer, so blocked bots don't translate to ad-spend savings. Has not raised since 2020. Roadmap reads narrow on broader product surface.
 
-DataCops protects the same surfaces Castle does - signup and login - but it does it from inside a first-party analytics architecture, and that changes what it can see.
+Wish List: A real mid-market tier between $200 and $4,000. A stable `castle_devise` 1.0. Some surface-level ad-attribution awareness on blocked signups.
 
-It runs on your own subdomain, first-party, so the trust layer and your analytics are the same pipeline rather than two disconnected systems. Bot filtering happens at ingestion, scored against a 361.8 billion-plus IP intelligence database that classifies residential, data-center, VPN, proxy, and Tor. SignUp Cops adds identity intelligence at the signup moment - exactly the single-fingerprint, recycled-email cluster the honeypot exposed.
+Value for Money: 7/10. If your only problem is API-edge security and you're at one of the two pricing tiers, it's a clean pick.
 
-The piece Castle structurally cannot match: because the trust signal lives in the same pipeline as analytics and CAPI, DataCops correlates fraud back to the ad campaign and channel that delivered it, and keeps bot conversions from being forwarded to Meta, Google, TikTok, and LinkedIn as training data. You find out not just *that* a signup was fake, but which campaign paid for it - and your bidding stops getting taught to chase more of it.
+Pricing: Free (1K calls/mo); Pro $200/mo; Enterprise from $4,000/mo.
 
-The data is held in two tiers, separated at the source: anonymous session analytics flow unconditionally, identifiable data is gated on consent. You get account protection and clean ad signal in one stack instead of bolting a marketing-blind security tool onto a security-blind analytics tool.
+---
 
-Honest limitations, because the comparison should be fair. DataCops is a newer brand than Castle, which has a decade in market - if you want a long enterprise track record specifically in account-takeover defense, Castle has more of one. DataCops SOC 2 Type II is in progress, so a heavily regulated buyer may need to wait. The shared-CAPI capability is in verification. And DataCops does not claim to "block" fraud outright or catch 100 percent of it - it surfaces context and scores risk, and you decide. If your single, narrow need is hardened credential-stuffing defense at the edge and nothing else, Castle is a perfectly rational pick. If your fake-account problem is bleeding into your ad spend, a tool that cannot see your ad spend cannot fix it.
+**2. DataDome**
 
-## Decision guide
+The Good: Bigger ML detection model, broader bot-management coverage including scrapers and content-abuse bots, edge integrations with Cloudflare/Akamai/Fastly. Enterprise procurement-friendly.
 
-**Your main threat is account takeover and credential stuffing, full stop.** Castle is a strong fit. So is DataDome at the wide end. No need to switch.
+Frustrations: Enterprise sales motion only. No published pricing. Heavier integration cost than Castle.
 
-**You are a Rails team looking at a Castle Devise alternative.** If you want account-event scoring alongside Devise, Castle is built for that. If you also want signup fraud tied to ad attribution, DataCops sits in the same flow and adds the marketing layer.
+Wish List: A self-serve mid-market tier.
 
-**Fake signups are inflating your conversions and you run paid acquisition.** This is the DataCops case. You need the fraud signal connected to your campaigns and kept out of your CAPI feed. Castle cannot do that.
+Value for Money: 7/10. The enterprise-grade pick when ATO is one of several bot problems, not the only one.
 
-**You are a marketing-led SaaS or ecommerce team.** DataCops - one stack for signup protection plus clean analytics and ad signal beats two tools that each ignore half the problem.
+Pricing: Sales-led. No public pricing.
 
-**You are a regulated enterprise that needs SOC 2 Type II on day one.** Castle, or a mature incumbent, until DataCops completes certification.
+---
 
-**Cost-driven and on a tight budget.** Compare real usage tiers. DataCops has a free tier of 2,000 signup verifications a month, which carries an early-stage team a long way before paying.
+**3. Arkose Labs**
 
-## You are not buying account security. You are buying back your ad data.
+The Good: Strong ATO and bonus abuse coverage. "MatchKey" challenge model that's harder for solver farms than reCAPTCHA. Enterprise customers in finance and gaming.
 
-The mistake I see teams make is scoping this as a security purchase - "we need to stop account takeovers" - and stopping there. So they buy a tool that guards the account perfectly and is completely blind to the fact that fake accounts are also fake conversions, fake optimization signal, and a slow leak in their ROAS.
+Frustrations: Enterprise pricing only. Challenge UX adds friction visible to real users.
 
-Castle answers "is this account safe." That is a real question and Castle answers it well. But if you run paid acquisition, you have a second question Castle was never built to hear: *what is my ad budget actually buying, and what is it teaching Meta and Google to do next?*
+Wish List: Better invisible mode.
 
-So before you renew anything: pull your last 1,000 signups, fingerprint them, and trace them back to the campaigns that delivered them. How many were real? And which tool in your stack was even able to tell you?
+Value for Money: 6.5/10. Strong for high-stakes industries; overkill for SaaS signup defense.
+
+Pricing: Sales-led.
+
+---
+
+## Tier 2: Marketing-aware trust infrastructure (where the gap lives)
+
+The overlap with Castle is the signup/login surface. The new layer is correlating fraud back to the ad campaign and stopping the polluted conversion event before it reaches CAPI.
+
+**4. DataCops**
+
+The Good: Same signup/login surface protection as Castle (IP intelligence over 361,873,948,495+ IPs and network ranges including 146.4B+ datacenter IPs, browser fingerprinting on canvas/WebGL/audio/screen/fonts, email validation including disposable/fresh/alias detection, real-time risk scoring at the form). Plus the layer Castle doesn't ship: ad-attribution awareness, server-side CAPI mediation to Meta + Google + TikTok + LinkedIn, traffic-fraud validation across the whole site (not just auth endpoints), first-party CNAME analytics that survives ad blockers and ITP, and a TCF 2.2 first-party consent manager. "Why CAPTCHA is dead" thesis baked in: humans behind the fraud, 99.9% of CAPTCHAs solved by bots. Replaces the reCAPTCHA + email-verification stack.
+
+Frustrations: SOC 2 Type II is in progress, not yet attested. ISO 27001 is planned. The Rails ecosystem doesn't have a Devise-native gem (Castle does); integration is a script tag plus an API call from your auth handler. Younger product than Castle.
+
+Wish List: A Devise-native gem. SOC 2 attestation. ISO 27001.
+
+Value for Money: 8.5/10. Strong for marketing-aware operators who want both the security AND the ad-spend protection in one bill.
+
+Pricing: Free (2,000 sessions/mo, 500 signup verifications, unlimited bot detection, free CMP). Growth $7.99/mo (5K sessions, unlimited Meta + Google CAPI). Business $49/mo (50K sessions + HubSpot integration). Organization $299/mo (300K sessions). Enterprise on Talk-to-Sales (dedicated environment, dedicated IP reputation database, custom DPA, residency).
+
+---
+
+**5. SEON**
+
+The Good: Strong digital footprint enrichment from email/phone OSINT, real-time risk scoring, fintech-friendly.
+
+Frustrations: Pricing opaque, sales-led. No native ad-attribution. Less marketing-aware than DataCops.
+
+Wish List: Public pricing.
+
+Value for Money: 7/10. Good for fintech KYC-adjacent flows.
+
+Pricing: Sales-led.
+
+---
+
+**6. Sift / Verisoul**
+
+The Good: Established player (Sift) with deep risk graph; Verisoul newer with focused fake-account product.
+
+Frustrations: Enterprise pricing for Sift; Verisoul still building out integrations. Both are signup-focused, neither covers ad-attribution.
+
+Wish List: Mid-market self-serve.
+
+Value for Money: 6.5/10 each. Specialist picks if you don't need the broader trust stack.
+
+Pricing: Sales-led.
+
+---
+
+## The Rails / Devise sub-question
+
+If you found this post by searching "Castle Devise alternative," the honest answer in 2026 is mixed.
+
+`castle_devise` is still labeled beta with breaking-change warnings. That's a real concern for production Rails monoliths that need a stable gem they can pin and forget about. The DataCops integration on Rails is not a Devise-native gem; it's a script tag on the marketing pages plus a server-side API call from your `SessionsController#create` and `RegistrationsController#create` handlers. That's roughly 30 to 60 minutes of work for a comfortable Rails developer, and it ships you the same risk score plus the marketing-aware trust layer.
+
+If the only thing you care about is a Devise gem you can `bundle add` and move on, Castle is still the cleanest path despite the beta label. If you care about the score plus the ad-attribution and CAPI mediation, DataCops is the broader pick at a fraction of the price.
+
+Most teams pick one. A small number run both, with Castle on the auth surface and DataCops as the campaign-trust layer underneath.
+
+---
+
+## Pricing math people forget
+
+A worked example. A growth-stage SaaS at 80K signup attempts a month, doing paid acquisition on Meta and Google, with the standard 8 to 20% bot rate.
+
+Castle Pro at $200/mo handles the security side. The ad-spend side (let's say $40K/mo paid acquisition with 12% bot signups optimising Smart Bidding toward the channels delivering bots) is silently bleeding roughly $4,800/mo of campaign budget into the wrong audiences. Castle does not address this.
+
+DataCops Business at $49/mo handles the security side AND the ad-attribution side AND the CAPI mediation that does not forward the polluted conversions. The bid algorithm sees clean signal. The $4,800/mo bleed stops.
+
+The bundle math is what makes the comparison interesting. Castle is excellent at one thing. DataCops is shipped across the seam where security meets paid acquisition.
+
+---
+
+## So what should you actually use?
+
+Want pure API-edge ATO and credential-stuffing protection on Rails Devise, ready in an afternoon? Try **Castle.io**.
+
+Want heavier enterprise bot management with a CDN integration story (Cloudflare, Akamai)? Try **DataDome**.
+
+Want high-friction challenge UX for finance or gaming bonus abuse? Try **Arkose Labs**.
+
+Want fintech-grade KYC enrichment? Try **SEON** or **Sift**.
+
+Want the same signup/login protection AND ad-attribution AND CAPI mediation AND consent in one bill? Try **DataCops**.
+
+Want both belts and suspenders? Castle on the auth surface and DataCops as the marketing-aware layer underneath. Some teams run this; most don't need to.
+
+---
+
+## The mistake I see people make
+
+Solving the security half of the bot problem and ignoring the ad-spend half. A blocked bot signup at the auth boundary is good. A blocked bot signup that still fired a Meta CAPI conversion event 90ms before the block, because the front-end pixel ran on submit and CAPI fired from the form handler, is silently training Meta's bid algorithm on a fake conversion. The block at the door doesn't undo the polluted signal. The honest 2026 answer is to filter pre-forward, with the same risk score gating the CAPI event, not just the database insert.
+
+---
+
+## Now your turn
+
+What's your current setup? Castle on signup, Cloudflare in front, reCAPTCHA on the form, and a hope that the ad spend math works out? Drop your stack and I'll show you where the dollars are leaking.
 
 ---
 
